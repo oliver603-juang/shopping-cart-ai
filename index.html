@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 智慧購物車清單</title>
+    <!-- 使用 Tailwind CSS 進行快速樣式設計 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 自定義一些深色模式的樣式細節 */
+        body {
+            background-color: #191919;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .item-input {
+            background: transparent;
+            border: none;
+            color: inherit;
+            outline: none;
+            font-size: 1rem;
+        }
+        .item-input:focus {
+            border-bottom: 1px solid #4b5563;
+        }
+        /* 名稱輸入框樣式 */
+        .name-input {
+            width: 100%;
+            font-weight: 500;
+        }
+        /* 價格輸入框樣式 */
+        .price-input {
+            width: 80px;
+            text-align: right;
+        }
+        .drag-handle {
+            cursor: move;
+            color: #555;
+        }
+        /* 隱藏數字輸入框的箭頭 */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        .checked-item input {
+            text-decoration: line-through;
+            color: #6b7280;
+        }
+        .checked-item {
+            opacity: 0.7;
+        }
+        /* 載入動畫 */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-custom {
+            animation: spin 1s linear infinite;
+        }
+        /* 模態框背景 */
+        .modal-backdrop {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-md bg-[#202020] rounded-lg shadow-xl p-6 border border-[#333] relative">
+        
+        <!-- API Key 設定按鈕 (右上角) -->
+        <button id="apiKeyBtn" class="absolute top-4 right-4 text-gray-500 hover:text-blue-400 transition-colors" title="設定 Google Gemini API Key">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
+        </button>
+
+        <!-- 標題 -->
+        <div class="mb-6 pr-8">
+            <h1 class="text-xl font-bold text-gray-200 flex items-center gap-2">
+                購物車清單
+                <span class="text-xs font-normal text-blue-400 border border-blue-400 px-1 rounded">AI版</span>
+            </h1>
+            <!-- 匯率與載入狀態 -->
+            <div class="flex items-center space-x-2 mt-2">
+                 <span id="loadingIcon" class="hidden text-blue-400 flex items-center text-sm">
+                    <svg class="animate-spin-custom h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="loadingText">更新匯率中...</span>
+                </span>
+            </div>
+            <div class="mt-2">
+                <select id="currencySelector" class="bg-[#333] text-sm text-white border border-[#444] rounded px-2 py-1 outline-none focus:border-blue-500 transition-colors w-full">
+                    <option value="TWD">🇹🇼 台幣 (TWD)</option>
+                    <option value="JPY">🇯🇵 日幣 (JPY)</option>
+                    <option value="CNY">🇨🇳 人民幣 (CNY)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 匯率資訊顯示 -->
+        <div id="rateInfo" class="text-xs text-gray-500 mb-4 text-right hidden">
+            匯率來源: 即時更新
+        </div>
+
+        <!-- 清單容器 -->
+        <div id="itemList" class="space-y-2 mb-4">
+            <!-- 項目將由 JS 動態生成 -->
+        </div>
+
+        <!-- 操作按鈕區 -->
+        <div class="flex space-x-2 mb-4">
+            <!-- 一般新增按鈕 -->
+            <button id="addBtn" class="flex-1 flex items-center justify-center bg-[#2a2a2a] hover:bg-[#333] text-gray-300 transition-colors py-2 px-4 rounded border border-[#444]">
+                <span class="mr-2 font-bold">+</span> 手動新增
+            </button>
+            
+            <!-- 圖片辨識按鈕 -->
+            <button id="imageAddBtn" class="flex-1 flex items-center justify-center bg-indigo-900/50 hover:bg-indigo-800/50 text-indigo-200 transition-colors py-2 px-4 rounded border border-indigo-700/50 relative overflow-hidden group">
+                <input type="file" id="imageInput" multiple accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span class="relative z-0">從圖片辨識</span>
+            </button>
+        </div>
+
+        <hr class="border-[#333] my-4">
+
+        <!-- 總計區域 -->
+        <div class="mt-4">
+            <button id="calcBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors shadow-lg">
+                計算小計
+            </button>
+            
+            <div id="resultArea" class="hidden mt-4 p-4 bg-[#2a2a2a] rounded border border-[#444] animate-fade-in">
+                <div class="flex justify-between items-center text-sm text-gray-400 mb-1">
+                    <span>已勾選項目</span>
+                    <span id="countDisplay">0 個</span>
+                </div>
+                
+                <!-- 主要總金額 -->
+                <div class="flex justify-between items-center text-2xl font-bold text-white mb-2">
+                    <span>總金額</span>
+                    <span class="text-green-400"><span id="totalSymbol">NT$</span> <span id="totalDisplay">0</span></span>
+                </div>
+
+                <!-- 匯率換算參考區域 -->
+                <div id="conversionArea" class="pt-2 border-t border-[#444] text-sm text-gray-400 flex flex-col space-y-1">
+                    <!-- 動態插入換算結果 -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- API Key 設定視窗 -->
+    <div id="apiKeyModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
+        <div class="bg-[#202020] p-6 rounded-lg shadow-2xl border border-[#444] w-11/12 max-w-sm">
+            <h2 class="text-lg font-bold text-white mb-4">設定 Google API Key</h2>
+            <p class="text-sm text-gray-400 mb-4">請輸入您的 Google Gemini API Key 以使用圖片辨識功能。金鑰僅會儲存在您的瀏覽器中。</p>
+            <input type="password" id="apiKeyInput" placeholder="輸入 API Key" class="w-full bg-[#333] border border-[#555] rounded p-2 text-white mb-4 focus:border-blue-500 outline-none">
+            <div class="flex justify-end space-x-2">
+                <button id="closeApiKeyModal" class="px-4 py-2 text-gray-400 hover:text-white">取消</button>
+                <button id="saveApiKeyBtn" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">儲存</button>
+            </div>
+            <div class="mt-2 text-xs text-center">
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-400 hover:underline">取得 API Key</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const itemList = document.getElementById('itemList');
+        const addBtn = document.getElementById('addBtn');
+        const calcBtn = document.getElementById('calcBtn');
+        const resultArea = document.getElementById('resultArea');
+        const totalDisplay = document.getElementById('totalDisplay');
+        const totalSymbol = document.getElementById('totalSymbol');
+        const countDisplay = document.getElementById('countDisplay');
+        const currencySelector = document.getElementById('currencySelector');
+        const conversionArea = document.getElementById('conversionArea');
+        const loadingIcon = document.getElementById('loadingIcon');
+        const loadingText = document.getElementById('loadingText');
+        const rateInfo = document.getElementById('rateInfo');
+        
+        // API Key 相關 DOM
+        const apiKeyBtn = document.getElementById('apiKeyBtn');
+        const apiKeyModal = document.getElementById('apiKeyModal');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+        const closeApiKeyModal = document.getElementById('closeApiKeyModal');
+        
+        // 圖片上傳 DOM
+        const imageInput = document.getElementById('imageInput');
+
+        let exchangeRates = { TWD: 1, JPY: 4.65, CNY: 0.22 };
+        let currentCurrency = 'TWD';
+        const MODEL_NAME = 'gemini-2.5-flash-preview-09-2025';
+
+        // --- API Key 管理邏輯 ---
+        function getApiKey() {
+            return localStorage.getItem('gemini_api_key');
+        }
+
+        function setApiKey(key) {
+            localStorage.setItem('gemini_api_key', key);
+        }
+
+        apiKeyBtn.addEventListener('click', () => {
+            apiKeyInput.value = getApiKey() || '';
+            apiKeyModal.classList.remove('hidden');
+        });
+
+        closeApiKeyModal.addEventListener('click', () => {
+            apiKeyModal.classList.add('hidden');
+        });
+
+        saveApiKeyBtn.addEventListener('click', () => {
+            const key = apiKeyInput.value.trim();
+            if (key) {
+                setApiKey(key);
+                apiKeyModal.classList.add('hidden');
+                alert('API Key 已儲存！');
+            } else {
+                alert('請輸入有效的 API Key');
+            }
+        });
+
+        // --- 匯率與基礎邏輯 ---
+
+        async function fetchRates() {
+            loadingIcon.classList.remove('hidden');
+            loadingText.textContent = "更新匯率中...";
+            try {
+                const response = await fetch('https://api.exchangerate-api.com/v4/latest/TWD');
+                const data = await response.json();
+                if (data && data.rates) {
+                    exchangeRates = data.rates;
+                    rateInfo.textContent = `匯率更新時間: ${new Date(data.date).toLocaleDateString()}`;
+                    rateInfo.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('匯率抓取失敗', error);
+                rateInfo.textContent = '使用預設匯率';
+            } finally {
+                loadingIcon.classList.add('hidden');
+            }
+        }
+        fetchRates();
+
+        function getCurrencyInfo(currency) {
+            switch(currency) {
+                case 'JPY': return { symbol: '¥', label: '円' };
+                case 'CNY': return { symbol: '¥', label: '¥' };
+                default: return { symbol: 'NT$', label: '元' };
+            }
+        }
+
+        // --- 項目操作邏輯 ---
+
+        function createItem(name = '', price = '') {
+            const { label } = getCurrencyInfo(currentCurrency);
+            const div = document.createElement('div');
+            div.className = 'flex items-center space-x-2 p-2 hover:bg-[#2a2a2a] rounded group item-row border border-transparent hover:border-[#444] transition-all';
+            
+            div.innerHTML = `
+                <div class="drag-handle text-gray-500 cursor-move">⋮⋮</div>
+                <input type="checkbox" class="w-5 h-5 rounded border-gray-600 bg-[#333] text-blue-500 focus:ring-0 cursor-pointer item-checkbox">
+                
+                <div class="flex-1">
+                    <input type="text" placeholder="商品名稱" class="item-input name-input text-gray-300 placeholder-gray-600" value="${name}">
+                </div>
+
+                <div class="flex items-center">
+                    <input type="number" placeholder="金額" class="item-input price-input text-white placeholder-gray-600" value="${price}">
+                    <span class="text-gray-500 ml-1 text-sm currency-label whitespace-nowrap">${label}</span>
+                </div>
+
+                <button class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-opacity delete-btn px-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            `;
+
+            div.querySelector('.delete-btn').addEventListener('click', () => {
+                div.remove();
+                if (!resultArea.classList.contains('hidden')) calculateTotal();
+            });
+
+            const checkbox = div.querySelector('.item-checkbox');
+            checkbox.addEventListener('change', () => {
+                if (checkbox.checked) div.classList.add('checked-item');
+                else div.classList.remove('checked-item');
+            });
+
+            itemList.appendChild(div);
+            // 新項目自動捲動到最下方
+            div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        // --- Gemini 圖片辨識邏輯 ---
+
+        imageInput.addEventListener('change', async (event) => {
+            const files = event.target.files;
+            if (files.length === 0) return;
+
+            const apiKey = getApiKey();
+            if (!apiKey) {
+                alert("請先點擊右上角鑰匙圖示設定 API Key！");
+                // 清空 input 避免重複觸發
+                imageInput.value = ''; 
+                apiKeyBtn.click();
+                return;
+            }
+
+            loadingText.textContent = `正在辨識 ${files.length} 張圖片...`;
+            loadingIcon.classList.remove('hidden');
+
+            for (let i = 0; i < files.length; i++) {
+                try {
+                    const base64Data = await fileToBase64(files[i]);
+                    // 去除 data:image/jpeg;base64, 前綴
+                    const cleanBase64 = base64Data.split(',')[1];
+                    const mimeType = files[i].type;
+
+                    await analyzeImageWithGemini(apiKey, cleanBase64, mimeType);
+
+                } catch (e) {
+                    console.error("處理圖片失敗:", e);
+                    alert(`圖片 ${files[i].name} 辨識失敗: ` + e.message);
+                }
+            }
+
+            loadingIcon.classList.add('hidden');
+            // 清空 input，讓使用者可以重複選同一張圖
+            imageInput.value = '';
+        });
+
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        async function analyzeImageWithGemini(apiKey, base64Image, mimeType) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
+            
+            const promptText = `
+                Analyze this image to identify product items and their prices.
+                Ignore general text, look for price tags or menu items.
+                If there are multiple items, list them all.
+                Return ONLY a JSON array. Do not use Markdown code blocks.
+                Format: [{"name": "Product Name", "price": 100}, {"name": "Another Item", "price": 50}]
+                If price is not found, put 0. If name is not found, guess or put "Unknown Item".
+                Remove currency symbols from price, keep only numbers.
+            `;
+
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: promptText },
+                        {
+                            inline_data: {
+                                mime_type: mimeType,
+                                data: base64Image
+                            }
+                        }
+                    ]
+                }]
+            };
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error?.message || 'API request failed');
+            }
+
+            const data = await response.json();
+            const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            
+            if (textResponse) {
+                try {
+                    // 清理可能存在的 markdown 標記
+                    const cleanJson = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const items = JSON.parse(cleanJson);
+                    
+                    if (Array.isArray(items)) {
+                        items.forEach(item => {
+                            createItem(item.name, item.price);
+                        });
+                    } else if (typeof items === 'object') {
+                        createItem(items.name, items.price);
+                    }
+                } catch (e) {
+                    console.error("JSON 解析失敗:", textResponse);
+                    // 如果不是 JSON，試著新增一個項目並把原始文字填入名稱，讓使用者自己改
+                    createItem("辨識結果(請手動修正)", 0);
+                }
+            }
+        }
+
+        // --- 其他事件監聽 ---
+
+        addBtn.addEventListener('click', () => createItem());
+        calcBtn.addEventListener('click', calculateTotal);
+
+        currencySelector.addEventListener('change', (e) => {
+            currentCurrency = e.target.value;
+            const { symbol, label } = getCurrencyInfo(currentCurrency);
+            document.querySelectorAll('.currency-label').forEach(el => el.textContent = label);
+            totalSymbol.textContent = symbol;
+            if (!resultArea.classList.contains('hidden')) calculateTotal();
+        });
+
+        function calculateTotal() {
+            let total = 0;
+            let count = 0;
+            const rows = document.querySelectorAll('.item-row');
+
+            rows.forEach(row => {
+                const checkbox = row.querySelector('.item-checkbox');
+                const input = row.querySelector('.price-input');
+                if (checkbox.checked) {
+                    const price = parseFloat(input.value);
+                    if (!isNaN(price)) {
+                        total += price;
+                        count++;
+                    }
+                }
+            });
+
+            const displayTotal = currentCurrency === 'JPY' ? Math.round(total) : parseFloat(total.toFixed(2));
+            totalDisplay.textContent = displayTotal.toLocaleString();
+            countDisplay.textContent = `${count} 個`;
+            generateConversions(total);
+            resultArea.classList.remove('hidden');
+        }
+
+        function generateConversions(amount) {
+            conversionArea.innerHTML = '';
+            let amountInTWD = (currentCurrency === 'TWD') ? amount : amount / (exchangeRates[currentCurrency] || 1);
+            
+            let html = '';
+            if (currentCurrency !== 'TWD') {
+                html += `<div class="flex justify-between"><span>約合台幣 (TWD)</span><span class="text-gray-300">NT$ ${Math.round(amountInTWD).toLocaleString()}</span></div>`;
+            }
+            if (currentCurrency !== 'JPY') {
+                const amountJPY = amountInTWD * (exchangeRates['JPY'] || 1);
+                html += `<div class="flex justify-between"><span>約合日幣 (JPY)</span><span class="text-gray-300">¥ ${Math.round(amountJPY).toLocaleString()}</span></div>`;
+            }
+            if (currentCurrency !== 'CNY') {
+                const amountCNY = amountInTWD * (exchangeRates['CNY'] || 1);
+                html += `<div class="flex justify-between"><span>約合人民幣 (CNY)</span><span class="text-gray-300">¥ ${parseFloat(amountCNY.toFixed(1)).toLocaleString()}</span></div>`;
+            }
+            conversionArea.innerHTML = html;
+        }
+
+        // 初始化
+        createItem(); // 預設新增一筆空的
+    </script>
+</body>
+</html>
