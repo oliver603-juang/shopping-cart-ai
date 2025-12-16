@@ -3,37 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 智慧購物車 v16 (預設清空版)</title>
+    <title>AI 智慧購物車 | 綠色莫蘭迪風格</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #191919; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .item-input { background: transparent; border: none; color: inherit; outline: none; font-size: 1rem; }
-        .item-input:focus { border-bottom: 1px solid #4b5563; }
+        /* --------------------- GREEN MORANDI THEME --------------------- */
+        :root {
+            --bg-main: #F9F7F3; /* 淺米白/灰白 */
+            --color-text: #333333;
+            --accent-green: #A8B5A3; /* 柔和灰綠 (Primary) */
+            --accent-green-dark: #7D8B7E; /* 沉穩深綠 */
+            --accent-pink: #E4C7C2; /* 淺柔粉 (Secondary) */
+            --accent-pink-dark: #DDA0A0; /* 淺暖橘/乾燥玫瑰 (Success/Highlight) */
+            --color-light-gray: #E5E7EB; /* Gray-200 */
+        }
+        
+        body { 
+            background-color: var(--bg-main); 
+            color: var(--color-text); 
+            font-family: 'Noto Sans TC', sans-serif; 
+        }
+        .app-container {
+            background-color: #ffffff; /* 內容區塊使用白色 */
+            border: 1px solid var(--color-light-gray);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        /* 輸入框和勾選樣式 */
+        .item-input { 
+            background: transparent; 
+            border: none; 
+            color: inherit; 
+            outline: none; 
+            font-size: 1rem; 
+        }
+        .item-input:focus { 
+            border-bottom: 1px solid var(--accent-green); 
+        }
         .name-input { width: 100%; font-weight: 500; }
         .price-input { width: 80px; text-align: right; transition: all 0.3s; }
         
-        /* 勾選後文字加上刪除線，表示已放入購物車計算 */
-        .checked-item input.name-input { text-decoration: line-through; color: #6b7280; }
-        .checked-item { opacity: 1; } 
+        /* 勾選後樣式 */
+        .checked-item input.name-input { 
+            text-decoration: line-through; 
+            color: var(--color-light-gray); /* 淺色刪除線 */
+        }
+        .checked-item { opacity: 0.7; } 
         
-        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .animate-spin-custom { animation: spin 1s linear infinite; }
-        .modal-backdrop { background-color: rgba(0, 0, 0, 0.7); }
-        .ai-input-wrapper:focus-within { box-shadow: 0 0 15px rgba(168, 85, 247, 0.3); border-color: #a855f7; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         
-        /* 成功動畫 (紫色系) */
-        @keyframes flash-purple { 0% { background-color: rgba(168, 85, 247, 0.2); } 100% { background-color: transparent; } }
-        .flash-success { animation: flash-purple 1.5s ease-out; }
+        /* AI Input Wrapper 效果 */
+        .ai-input-wrapper {
+            border: 1px solid var(--color-light-gray);
+            background-color: var(--bg-main);
+            transition: all 0.3s;
+        }
+        .ai-input-wrapper:focus-within { 
+            box-shadow: 0 0 10px rgba(168, 181, 163, 0.4); /* 柔和灰綠陰影 */
+            border-color: var(--accent-green); 
+        }
+        
+        /* 成功動畫 (使用 Accent-Pink) */
+        @keyframes flash-success-theme { 0% { background-color: rgba(228, 199, 194, 0.5); } 100% { background-color: transparent; } }
+        .flash-success { animation: flash-success-theme 1.5s ease-out; }
 
         /* 規則標籤 */
         .rule-badge {
             font-size: 0.7rem;
             padding: 2px 6px;
             border-radius: 4px;
-            background-color: #581c87;
-            color: #d8b4fe;
-            border: 1px solid #7e22ce;
+            background-color: var(--accent-green-dark);
+            color: var(--bg-main);
+            border: 1px solid var(--accent-green);
             margin-left: 5px;
             display: inline-block;
             white-space: nowrap;
@@ -46,8 +87,10 @@
             padding: 1px 4px;
             border-radius: 3px;
         }
-        .status-77 { background-color: #065f46; color: #6ee7b7; border: 1px solid #059669; } /* 3件77折 - 綠色 */
-        .status-79 { background-color: #92400e; color: #fdba74; border: 1px solid #b45309; } /* 2件79折 - 橘色 */
+        /* 3件77折 - 綠色 */
+        .status-77 { background-color: var(--accent-green-dark); color: #DCFCE7; border: 1px solid #16A34A; } 
+        /* 2件79折 - 淺暖橘 */
+        .status-79 { background-color: var(--accent-pink-dark); color: var(--bg-main); border: 1px solid var(--accent-pink); } 
         .status-none { color: #9ca3af; font-size: 0.65rem; }
 
         /* 促銷按鈕樣式 */
@@ -55,54 +98,73 @@
             font-size: 0.75rem; 
             padding: 6px 8px;
             border-radius: 8px;
-            border: 1px solid #444;
-            background-color: #2a2a2a;
-            color: #ccc;
+            border: 1px solid var(--accent-green);
+            background-color: var(--color-light-gray);
+            color: var(--color-text);
             transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 2px;
             white-space: nowrap;
+            box-shadow: 0 2px 0 0 var(--accent-pink);
         }
         .promo-btn:hover {
-            border-color: #d8b4fe;
-            color: #fff;
-            background-color: #9333ea;
+            background-color: var(--accent-pink);
+            color: var(--color-text);
+            border-color: var(--accent-pink-dark);
+            box-shadow: 0 2px 0 0 var(--accent-green-dark);
         }
         .promo-btn.dynamic {
-            border-color: #ea580c; 
-            color: #fdba74;
+            border-color: var(--accent-pink-dark); 
+            color: var(--accent-pink-dark);
+            background-color: var(--accent-pink);
         }
         .promo-btn.dynamic:hover {
-            background-color: #ea580c;
+            background-color: var(--accent-pink-dark);
             color: white;
+        }
+        
+        /* 計算總計按鈕 */
+        .calc-btn {
+            background-color: var(--accent-green-dark);
+            color: white;
+            box-shadow: 0 4px 0 0 var(--accent-pink-dark);
+            transition: all 0.2s;
+        }
+        .calc-btn:hover {
+            background-color: var(--accent-green);
+            box-shadow: 0 4px 0 0 var(--accent-pink);
+        }
+        .calc-btn:active {
+            transform: translateY(2px);
+            box-shadow: none;
         }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4">
 
-    <div class="w-full max-w-md bg-[#202020] rounded-lg shadow-xl p-6 border border-[#333] relative">
+    <div class="w-full max-w-md app-container rounded-lg shadow-xl p-6 relative">
         
         <!-- API Key -->
-        <button id="apiKeyBtn" class="absolute top-4 right-4 text-gray-500 hover:text-purple-400 transition-colors" title="設定 API Key">
+        <button id="apiKeyBtn" class="absolute top-4 right-4 text-gray-500 hover:text-[var(--accent-green)] transition-colors" title="設定 API Key">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
         </button>
 
         <div class="mb-4 pr-8">
-            <h1 class="text-xl font-bold text-gray-200 flex items-center gap-2">
+            <h1 class="text-xl font-bold text-[var(--color-text)] flex items-center gap-2">
                 購物車清單
-                <span class="text-xs font-normal text-purple-400 border border-purple-400 px-1 rounded">v16 預設清空版</span>
+                <span class="text-xs font-normal text-[var(--accent-pink-dark)] border border-[var(--accent-pink-dark)] px-1 rounded">v16 綠色莫蘭迪</span>
             </h1>
             <div class="mt-2 flex gap-2">
-                 <select id="currencySelector" class="flex-1 bg-[#333] text-sm text-white border border-[#444] rounded px-2 py-1 outline-none focus:border-blue-500">
+                 <select id="currencySelector" class="flex-1 bg-[var(--color-light-gray)] text-sm text-[var(--color-text)] border border-[var(--color-light-gray)] rounded px-2 py-1 outline-none focus:border-[var(--accent-green)]">
                     <option value="TWD">🇹🇼 台幣 (TWD)</option>
                     <option value="JPY">🇯🇵 日幣 (JPY)</option>
                     <option value="CNY">🇨🇳 人民幣 (CNY)</option>
                 </select>
-                <span id="loadingBlock" class="hidden flex items-center text-sm text-purple-400 px-2 bg-[#2a2a2a] rounded border border-[#333]">
+                <span id="loadingBlock" class="hidden flex items-center text-sm text-[var(--accent-green)] px-2 bg-[var(--color-light-gray)] rounded border border-[var(--accent-green)]">
                     <svg class="animate-spin-custom h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
                     <span id="loadingText">處理中...</span>
                 </span>
@@ -112,12 +174,13 @@
         <!-- AI Input -->
         <div class="mb-4">
             <div class="flex gap-2">
-                <div class="flex-1 relative ai-input-wrapper border border-[#444] rounded-lg bg-[#252525] transition-all">
+                <div class="flex-1 relative ai-input-wrapper rounded-lg transition-all">
                     <input type="text" id="aiTextInput" placeholder="AI 輸入：品客39元 3件77折" 
-                           class="w-full bg-transparent text-white px-3 py-2 text-sm outline-none placeholder-gray-600 font-mono"
+                           class="w-full bg-transparent text-[var(--color-text)] px-3 py-2 text-sm outline-none placeholder-gray-400 font-mono"
                            autocomplete="off">
                 </div>
-                <button id="aiSendBtn" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center shadow-lg">
+                <!-- Accent Green Dark Button -->
+                <button id="aiSendBtn" class="bg-[var(--accent-green-dark)] hover:bg-[var(--accent-green)] text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center shadow-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clip-rule="evenodd" />
                     </svg>
@@ -144,10 +207,12 @@
         <div id="itemList" class="space-y-2 mb-4 min-h-[50px]"></div>
 
         <div class="flex space-x-2 mb-4">
-            <button id="addBtn" class="flex-1 bg-[#2a2a2a] hover:bg-[#333] text-gray-300 py-2 px-4 rounded border border-[#444] transition-colors text-sm">
+            <!-- Secondary Button Style -->
+            <button id="addBtn" class="flex-1 bg-[var(--color-light-gray)] hover:bg-[var(--accent-pink)] text-[var(--color-text)] py-2 px-4 rounded border border-[var(--color-light-gray)] transition-colors text-sm">
                 + 手動新增
             </button>
-            <button id="imageAddBtn" class="flex-1 bg-purple-900/30 hover:bg-purple-800/30 text-purple-300 py-2 px-4 rounded border border-purple-700/50 relative overflow-hidden text-sm flex items-center justify-center group transition-all">
+            <!-- Accent Green/Pink Style -->
+            <button id="imageAddBtn" class="flex-1 bg-[var(--accent-green)]/30 hover:bg-[var(--accent-green)]/50 text-[var(--accent-green-dark)] py-2 px-4 rounded border border-[var(--accent-green)]/50 relative overflow-hidden text-sm flex items-center justify-center group transition-all">
                 <input type="file" id="imageInput" multiple accept="image/*" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -156,38 +221,40 @@
             </button>
         </div>
 
-        <hr class="border-[#333] my-4">
+        <hr class="border-[var(--color-light-gray)] my-4">
 
         <div class="mt-4">
-            <button id="calcBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors shadow-lg">
+            <!-- Primary Button Style -->
+            <button id="calcBtn" class="w-full calc-btn text-white font-medium py-2 px-4 rounded transition-colors">
                 計算小計 (含自動折扣)
             </button>
-            <div id="resultArea" class="hidden mt-4 p-4 bg-[#2a2a2a] rounded border border-[#444] animate-fade-in">
-                <div class="flex justify-between items-center text-sm text-gray-400 mb-1">
+            <div id="resultArea" class="hidden mt-4 p-4 bg-[var(--accent-pink)]/30 rounded border border-[var(--accent-pink)] animate-fade-in">
+                <div class="flex justify-between items-center text-sm text-[var(--color-gray-dark)] mb-1">
                     <span>已勾選項目</span>
                     <span id="countDisplay">0 個</span>
                 </div>
-                <div class="flex justify-between items-center text-2xl font-bold text-white mb-2">
+                <div class="flex justify-between items-center text-2xl font-bold text-[var(--color-text)] mb-2">
                     <span>總金額</span>
-                    <span class="text-green-400"><span id="totalSymbol">NT$</span> <span id="totalDisplay">0</span></span>
+                    <!-- Accent Pink Dark (Success/Highlight) -->
+                    <span class="text-[var(--accent-pink-dark)]"><span id="totalSymbol">NT$</span> <span id="totalDisplay">0</span></span>
                 </div>
-                <div id="conversionArea" class="pt-2 border-t border-[#444] text-sm text-gray-400 flex flex-col space-y-1"></div>
+                <div id="conversionArea" class="pt-2 border-t border-[var(--color-light-gray)] text-sm text-[var(--color-gray-dark)] flex flex-col space-y-1"></div>
             </div>
         </div>
 
-        <div id="rateInfo" class="text-[10px] text-gray-600 mt-2 text-center">匯率來源: 即時更新</div>
+        <div id="rateInfo" class="text-[10px] text-gray-500 mt-2 text-center">匯率來源: 即時更新</div>
     </div>
 
     <!-- API Key Modal -->
     <div id="apiKeyModal" class="fixed inset-0 modal-backdrop flex items-center justify-center z-50 hidden">
-        <div class="bg-[#202020] p-6 rounded-lg shadow-2xl border border-[#444] w-11/12 max-w-sm">
-            <h2 class="text-lg font-bold text-white mb-4">設定 Google API Key</h2>
-            <input type="password" id="apiKeyInput" placeholder="輸入 API Key" class="w-full bg-[#333] border border-[#555] rounded p-2 text-white mb-4 focus:border-purple-500 outline-none">
+        <div class="bg-white p-6 rounded-lg shadow-2xl border border-[var(--color-light-gray)] w-11/12 max-w-sm">
+            <h2 class="text-lg font-bold text-[var(--color-text)] mb-4">設定 Google API Key</h2>
+            <input type="password" id="apiKeyInput" placeholder="輸入 API Key" class="w-full bg-[var(--color-light-gray)] border border-[var(--accent-green)] rounded p-2 text-[var(--color-text)] mb-4 focus:border-[var(--accent-green-dark)] outline-none">
             <div class="flex justify-end space-x-2">
-                <button id="closeApiKeyModal" class="px-4 py-2 text-gray-400 hover:text-white text-sm">取消</button>
-                <button id="saveApiKeyBtn" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm">儲存</button>
+                <button id="closeApiKeyModal" class="px-4 py-2 text-gray-500 hover:text-[var(--accent-green)] text-sm">取消</button>
+                <button id="saveApiKeyBtn" class="px-4 py-2 bg-[var(--accent-green)] text-white rounded hover:bg-[var(--accent-green-dark)] text-sm">儲存</button>
             </div>
-            <div class="mt-2 text-xs text-center"><a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-400 hover:underline">取得 API Key</a></div>
+            <div class="mt-2 text-xs text-center"><a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[var(--accent-green-dark)] hover:underline">取得 API Key</a></div>
         </div>
     </div>
 
@@ -235,10 +302,57 @@
 
         async function fetchRates() {
             try {
-                const response = await fetch('https://api.exchangerate-api.com/v4/latest/TWD');
-                const data = await response.json();
-                if (data && data.rates) { exchangeRates = data.rates; rateInfo.textContent = `匯率更新: ${new Date(data.date).toLocaleDateString()}`; }
-            } catch (e) {}
+                // 使用 Google Search Grounding 查詢 TWD, JPY, CNY 的匯率
+                const prompt = "What are the latest exchange rates for 1 TWD to JPY, and 1 TWD to CNY? Provide the result as a JSON object: {\"JPY\": <rate>, \"CNY\": <rate>}.";
+                const rateText = await new Promise(async (resolve, reject) => {
+                    const apiKey = getApiKey();
+                    if (!apiKey) return resolve(JSON.stringify({ JPY: 4.65, CNY: 0.22 })); // Fallback if no key
+                    
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
+                    const payload = {
+                        contents: [{ parts: [{ text: prompt }] }],
+                        tools: [{ "google_search": {} }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            responseSchema: {
+                                type: "OBJECT",
+                                properties: {
+                                    "JPY": { "type": "NUMBER" },
+                                    "CNY": { "type": "NUMBER" }
+                                }
+                            }
+                        }
+                    };
+
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const result = await response.json();
+                        const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (jsonText) {
+                            resolve(jsonText);
+                        } else {
+                            reject(new Error("No JSON response from API."));
+                        }
+                    } catch (e) {
+                        reject(e);
+                    }
+                });
+
+                const parsedRates = JSON.parse(rateText);
+                if (parsedRates.JPY && parsedRates.CNY) {
+                    exchangeRates.JPY = parseFloat(parsedRates.JPY);
+                    exchangeRates.CNY = parseFloat(parsedRates.CNY);
+                    rateInfo.textContent = `匯率來源: AI 即時更新 (1 TWD)`;
+                } else {
+                    throw new Error("Invalid rate format.");
+                }
+            } catch (e) {
+                rateInfo.textContent = `匯率更新失敗，使用預設值 (JPY: ${exchangeRates.JPY}, CNY: ${exchangeRates.CNY})`;
+            }
         }
         fetchRates();
 
@@ -259,7 +373,7 @@
         function createItem(name = '', price = '', rule = null) {
             const { label } = getCurrencyInfo(currentCurrency);
             const div = document.createElement('div');
-            div.className = 'flex items-center space-x-2 p-2 hover:bg-[#2a2a2a] rounded group item-row border border-transparent hover:border-[#444] transition-all flash-success';
+            div.className = 'flex items-center space-x-2 p-2 hover:bg-[var(--color-light-gray)] rounded group item-row border border-transparent hover:border-[var(--accent-green)] transition-all flash-success';
             
             const groupId = 'g_' + Math.random().toString(36).substr(2, 9);
             const originalPrice = price;
@@ -269,22 +383,23 @@
                 ruleHtml = '<span class="rule-badge">2件79折/3件77折</span><span class="dynamic-status status-none"></span>';
             }
 
-            // 修改處：移除 input 的 checked 屬性
+            // 調整顏色為淺色系
             div.innerHTML = `
-                <input type="checkbox" class="w-5 h-5 rounded border-gray-600 bg-[#333] text-purple-500 focus:ring-0 cursor-pointer item-checkbox ml-1">
+                <input type="checkbox" class="w-5 h-5 rounded border-gray-400 bg-[var(--color-light-gray)] accent-[var(--accent-green-dark)] focus:ring-0 cursor-pointer item-checkbox ml-1">
                 <div class="flex-1 flex items-center flex-wrap gap-1">
-                    <input type="text" placeholder="商品名稱" class="item-input name-input text-gray-300 placeholder-gray-600 w-full sm:w-auto" value="${name}">
+                    <input type="text" placeholder="商品名稱" class="item-input name-input text-[var(--color-text)] placeholder-gray-500 w-full sm:w-auto" value="${name}">
                     ${ruleHtml}
                 </div>
                 <div class="flex items-center">
-                    <input type="number" placeholder="金額" class="item-input price-input text-white placeholder-gray-600" 
+                    <input type="number" placeholder="金額" class="item-input price-input text-[var(--color-text)] placeholder-gray-500" 
                            value="${price}" 
                            data-original="${originalPrice}"
                            data-rule="${rule || ''}"
                            data-group="${groupId}">
                     <span class="text-gray-500 ml-1 text-sm currency-label whitespace-nowrap">${label}</span>
                 </div>
-                <button class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-red-400 transition-opacity delete-btn px-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
+                <!-- Delete Button -->
+                <button class="opacity-0 group-hover:opacity-100 text-gray-500 hover:text-[var(--accent-pink-dark)] transition-opacity delete-btn px-1"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
             `;
             
             div.querySelector('.delete-btn').addEventListener('click', () => { div.remove(); calculateTotal(); });
@@ -302,7 +417,6 @@
                 div.classList.toggle('checked-item', e.target.checked);
                 calculateTotal();
             });
-            // 移除預設加入 checked-item class
             
             itemList.appendChild(div);
             div.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -403,10 +517,11 @@
                 input.dataset.calculating = "true";
                 if (multiplier !== 1) {
                     input.value = parseFloat((original * multiplier).toFixed(1));
-                    input.style.color = multiplier === 0.77 ? '#6ee7b7' : '#fdba74'; // Green or Orange
+                    // 根據新的主題色調整顏色
+                    input.style.color = multiplier === 0.77 ? 'var(--accent-green-dark)' : 'var(--accent-pink-dark)'; // 深綠色或淺暖橘
                 } else {
                     input.value = original;
-                    input.style.color = 'white';
+                    input.style.color = 'var(--color-text)'; // 恢復主題文字色
                 }
                 input.dataset.calculating = "false";
             });
@@ -547,7 +662,7 @@
                     const val = baseTWD * (exchangeRates[c] || 1);
                     const formatted = c === 'JPY' ? Math.round(val) : val.toFixed(1);
                     const info = getCurrencyInfo(c);
-                    html += `<div class="flex justify-between"><span>約合 ${c}</span><span class="text-gray-300">${info.symbol} ${Number(formatted).toLocaleString()}</span></div>`;
+                    html += `<div class="flex justify-between"><span>約合 ${c}</span><span class="text-gray-500">${info.symbol} ${Number(formatted).toLocaleString()}</span></div>`;
                 }
             });
             conversionArea.innerHTML = html;
